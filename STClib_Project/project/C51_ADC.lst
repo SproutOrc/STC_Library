@@ -1,0 +1,81 @@
+C51 COMPILER V9.53.0.0   C51_ADC                                                           06/13/2015 21:39:24 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE C51_ADC
+OBJECT MODULE PLACED IN .\C51_ADC.obj
+COMPILER INVOKED BY: d:\Keil_v5\C51\BIN\C51.EXE ..\lib\src\C51_ADC.C LARGE WARNINGLEVEL(1) OPTIMIZE(8,SPEED) BROWSE INCD
+                    -IR(..\lib\inc;..\user;..\lib\inc\mcu;..\lib\inc\sys) DEBUG OBJECTEXTEND PRINT(.\C51_ADC.lst) TABS(2) OBJECT(.\C51_ADC.ob
+                    -j)
+
+line level    source
+
+   1          /******************************************************************
+   2          *         STC-51库/STC-51 library file
+   3          *
+   4          *文件名/file    : C51_ADC.C
+   5          *
+   6          *功能/function  : C51库ADC文件/adc file
+   7          *
+   8          *协议/licence   : GPL开源/open GPL
+   9          *
+  10          *作者/author    : J.H.Chen
+  11          *
+  12          *时间/time      : 2015-05-28
+  13          *
+  14          *说明/other     : 用于ADC采样
+  15          ******************************************************************/
+  16          #include "C51_Lib.h"
+  17          
+  18          #ifdef PROJECT_USE_AD
+  19          /******************************************************
+  20           * FunctionName : GetADC_Result
+  21           * Description  : 获取ADC的值
+  22           * Parameters   : Channel--通道  ADC_Speed--采样速度
+  23           * Returns      : ADC转换结果
+  24          ******************************************************/
+  25          uint16 GetADC_Result(uint8 Channel, uint8 ADC_Speed)
+  26          {
+  27   1        uint8 m1,m0,ASF,a;
+  28   1        m1 = P1M1;
+  29   1        m0 = P1M0;
+  30   1        ASF = P1ASF;
+  31   1      
+  32   1        if(Channel >= ADC_CHANNEL_0 && Channel <= ADC_CHANNEL_7)
+  33   1        {
+  34   2          P1M1 |= (0x01 << Channel);
+  35   2          P1M0 &= ~(0x01 << Channel);
+  36   2          P1ASF |= (0x01 << Channel); 
+  37   2          ADC_CONTR = ADC_POWER | (ADC_Speed<<5) | Channel;
+  38   2          ADC_CONTR |= ADC_START;
+  39   2          for(a = 100; a > 0; a--);
+  40   2          while(!(ADC_CONTR & ADC_FLAG));
+  41   2          ADC_CONTR &= ~ADC_FLAG; 
+  42   2          ADC_CONTR &= ~ADC_POWER;
+  43   2      
+  44   2          P1M1 = m1;
+  45   2          P1M0 = m0;
+  46   2          P1ASF = ASF;
+  47   2      
+  48   2          return ((uint16)ADC_RES << 2 | ADC_RESL);
+  49   2        }
+  50   1        
+  51   1        return 0; 
+  52   1      }
+  53          
+C51 COMPILER V9.53.0.0   C51_ADC                                                           06/13/2015 21:39:24 PAGE 2   
+
+  54          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    109    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

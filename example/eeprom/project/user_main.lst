@@ -1,0 +1,80 @@
+C51 COMPILER V9.53.0.0   USER_MAIN                                                         06/13/2015 21:44:40 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE USER_MAIN
+OBJECT MODULE PLACED IN .\user_main.obj
+COMPILER INVOKED BY: d:\Keil_v5\C51\BIN\C51.EXE ..\user\user_main.c LARGE WARNINGLEVEL(1) OPTIMIZE(8,SPEED) BROWSE INCDI
+                    -R(..\lib\inc;..\user;..\lib\inc\mcu;..\lib\inc\sys) DEBUG OBJECTEXTEND PRINT(.\user_main.lst) TABS(2) OBJECT(.\user_main
+                    -.obj)
+
+line level    source
+
+   1          /******************************************************************
+   2          *         STC-51库/STC-51 library file
+   3          *
+   4          *文件名/file    : user_main.c
+   5          *
+   6          *功能/function  : C51库用户文件/user file
+   7          *
+   8          *协议/licence   : GPL开源/open GPL
+   9          *
+  10          *作者/author    : J.H.Chen
+  11          *
+  12          *时间/time      : 2015-05-28
+  13          *
+  14          *说明/other     : 此文件编写用户程序逻辑
+  15                            user application in this file
+  16          ******************************************************************/
+  17          #include "C51_Lib.h"
+  18          #include <string.h>
+  19          
+  20          
+  21          /******************************************************
+  22           * FunctionName : user_init
+  23           * Description  : 初始化函数,用于系统初始化
+  24           * Parameters   : none
+  25           * Returns      : none
+  26          ******************************************************/
+  27          void user_init()
+  28          {
+  29   1        UartInit(115200);
+  30   1      }
+  31          
+  32          
+  33          /******************************************************
+  34           * FunctionName : user_application
+  35           * Description  : 用户APP程序段
+  36           * Parameters   : none
+  37           * Returns      : none
+  38          ******************************************************/
+  39          void user_application()
+  40          {
+  41   1        char buf[64];
+  42   1        memset(buf,0,64);
+  43   1        memcpy(buf,"Hello EEPROM..\n",15);
+  44   1        EEPROM_SectorErase(0);  //擦除扇区0
+  45   1        EEPROM_write(0,buf,15); //写EEPROM
+  46   1        delay_ms(2000);  //延时
+  47   1        memset(buf,0,64); //清空buf
+  48   1        EEPROM_read(0,buf,15); //读取EEPROM
+  49   1        UartwriteStr(buf,0);  //通过串口发送读取内容
+  50   1        while(true)
+  51   1        {
+  52   2        }
+  53   1      }
+C51 COMPILER V9.53.0.0   USER_MAIN                                                         06/13/2015 21:44:40 PAGE 2   
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    128    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----      64
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

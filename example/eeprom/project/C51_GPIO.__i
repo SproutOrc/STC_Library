@@ -1,0 +1,1 @@
+"..\lib\src\C51_GPIO.C" LARGE WARNINGLEVEL (1) OPTIMIZE (8,SPEED) BROWSE INCDIR(..\lib\inc;..\user;..\lib\inc\mcu;..\lib\inc\sys) DEBUG OBJECTEXTEND PRINT(.\C51_GPIO.lst) TABS (2) OBJECT(.\C51_GPIO.obj)

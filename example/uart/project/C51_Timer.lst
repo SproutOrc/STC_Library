@@ -1,0 +1,193 @@
+C51 COMPILER V9.53.0.0   C51_TIMER                                                         06/13/2015 20:14:19 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE C51_TIMER
+OBJECT MODULE PLACED IN .\C51_Timer.obj
+COMPILER INVOKED BY: d:\Keil_v5\C51\BIN\C51.EXE ..\lib\src\C51_Timer.C LARGE WARNINGLEVEL(1) OPTIMIZE(8,SPEED) BROWSE IN
+                    -CDIR(..\lib\inc;..\user;..\lib\inc\mcu;..\lib\inc\sys) DEBUG OBJECTEXTEND PRINT(.\C51_Timer.lst) TABS(2) OBJECT(.\C51_Ti
+                    -mer.obj)
+
+line level    source
+
+   1          /******************************************************************
+   2          *         STC-51库/STC-51 library file
+   3          *
+   4          *文件名/file    : c51_timer.c
+   5          *
+   6          *功能/function  : C51库定时器文件
+   7          *
+   8          *协议/licence   : GPL开源/open GPL
+   9          *
+  10          *作者/author    : J.H.Chen
+  11          *
+  12          *时间/time      : 2015-06-10
+  13          *
+  14          *说明/other     : 定时器使用定时器0,请勿修改定时器0相关代码
+  15          ******************************************************************/
+  16          #include "C51_Lib.h"
+  17          
+  18          #define TL0_1  0xE0   //定时初值
+  19          #define TH0_1  0xB1   //定时初值
+  20          
+  21          
+  22          static struct
+  23          {
+  24            unsigned int base;
+  25            unsigned int cnt;
+  26            unsigned char isOverflow;
+  27            unsigned char isEnable;
+  28          }delayType;
+  29          
+  30          static uint16 base;
+  31          static timer0_t  *timer_list,*p;
+  32          static timer0_t timer_head;
+  33          /******************************************************************************
+  34           * FunctionName : timer0init
+  35           * Description  : 定时器0初始化
+  36           * Parameters   : none
+  37           * Returns      : none
+  38           * Other        : 16位自动重载模式  1ms时基
+  39          *******************************************************************************/
+  40          void timer0init()
+  41          {
+  42   1        base = 65535-CPU_FAN/12000.0;
+  43   1        AUXR &= 0x7F;   //12T定时器模式
+  44   1        TMOD &= 0xF0;   
+  45   1        TMOD |= 0x01;   
+  46   1        TL0 = (uint8)(base&0x00FF);   
+  47   1        TH0 = base>>8;    
+  48   1        TF0 = 0;    
+  49   1        TR0 = 1;
+  50   1        
+  51   1        timer_head.next = NULL; //链表头不存储信息
+  52   1        timer_list = &timer_head;
+  53   1        
+C51 COMPILER V9.53.0.0   C51_TIMER                                                         06/13/2015 20:14:19 PAGE 2   
+
+  54   1        ET0 = 1;
+  55   1        EA = 1;
+  56   1      }
+  57          
+  58          /******************************************************************************
+  59           * FunctionName : timer0handler
+  60           * Description  : 定时器0中断处理, 1ms时间定时器
+  61           * Parameters   : none
+  62           * Returns      : none
+  63           * Other        : none
+  64          *******************************************************************************/
+  65          static void timer0handler()interrupt VECTOR_TIM0
+  66          {
+  67   1        TL0 = (uint8)(base&0x00FF);   
+  68   1        TH0 = base>>8;
+  69   1        
+  70   1        p = timer_list;
+  71   1        
+  72   1        while(p->next != NULL)//忽略链表头
+  73   1        {
+  74   2          if(++(p->next->cnt) >= p->next->period)
+  75   2          {
+  76   3            p->next->Timer0Func(p->next->timer_arg);
+  77   3            if(p->next->Timer_Status == Timer_Status_repeat) 
+  78   3              p->next->cnt = 0;
+  79   3            else  //单次定时结束,解绑功能
+  80   3              p->next = p->next->next;
+  81   3          }
+  82   2          p = p->next;
+  83   2        }
+  84   1        
+  85   1        if(delayType.isEnable==1 && ++delayType.cnt >= delayType.base)  
+  86   1        {
+  87   2          delayType.isEnable = 0;  //关闭延时器
+  88   2          delayType.isOverflow = 1; //置位溢出位
+  89   2        }
+  90   1        
+  91   1      }
+  92          
+  93          
+  94          /******************************************************************************
+  95           * FunctionName : delay_ms
+  96           * Description  : 毫秒级定时
+  97           * Parameters   : ms - 定时时间 ms
+  98           * Returns      : 误差-1ms
+  99          *******************************************************************************/
+ 100          void delay_ms(uint16 ms)
+ 101          {
+ 102   1        TR0 = 0;    //定时器0开始计时
+ 103   1        delayType.base = ms;
+ 104   1        delayType.cnt = 0;
+ 105   1        delayType.isOverflow = 0;
+ 106   1        delayType.isEnable = 1;
+ 107   1        TR0 = 1;    //定时器0开始计时
+ 108   1        while(delayType.isOverflow == 0);
+ 109   1      }
+ 110          
+ 111          
+ 112          /******************************************************************************
+ 113           * FunctionName : timer_disarm
+ 114           * Description  : 定时器取消功能绑定
+ 115           * Parameters   : timer--已经定义的功能变量
+C51 COMPILER V9.53.0.0   C51_TIMER                                                         06/13/2015 20:14:19 PAGE 3   
+
+ 116           * Returns      : 误差-1ms
+ 117          *******************************************************************************/
+ 118          void timer_disarm(timer0_t *timer)
+ 119          {
+ 120   1        p = timer_list;
+ 121   1        while(p->next != NULL)  //忽略链表头
+ 122   1        {
+ 123   2          if(p->next == timer)
+ 124   2          {
+ 125   3            p->next = p->next->next; //此处不做指针检查,因为node创建的时候NEXT指针已经置NULL
+ 126   3            return;
+ 127   3          }
+ 128   2          p = p->next; //下移
+ 129   2        }
+ 130   1      }
+ 131          
+ 132          /******************************************************************************
+ 133           * FunctionName : timer_arm
+ 134           * Description  : 定时器功能绑定
+ 135           * Parameters   : timer--已经定义的功能变量   period--定时周期,ms
+ 136                            Timer_Status--工作模式,单次定时或者重复定时
+ 137           * Returns      : 误差-1ms
+ 138          *******************************************************************************/
+ 139          void timer_arm(timer0_t *timer, uint32 period, Timer_Status_Def Timer_Status)
+ 140          {
+ 141   1        p = timer_list;
+ 142   1        while(p->next != NULL) 
+ 143   1          p = p->next; //下移
+ 144   1        
+ 145   1        timer->next = NULL;
+ 146   1        timer->period = period;
+ 147   1        timer->cnt = 0; 
+ 148   1        timer->Timer_Status = Timer_Status;
+ 149   1        
+ 150   1        p->next = timer;
+ 151   1      }
+ 152          
+ 153          /******************************************************************************
+ 154           * FunctionName : timer_setfn
+ 155           * Description  : 定时器功能绑定对应函数
+ 156           * Parameters   : timer--已经定义的功能变量   *timerfn--函数指针
+ 157                            timer_arg--函数预设参数
+ 158           * Returns      : 误差-1ms
+ 159          *******************************************************************************/
+ 160          void timer_setfn(timer0_t *timer, sysTimer0Func *timerfn, uint8 timer_arg)
+ 161          {
+ 162   1        timer->Timer0Func = timerfn;
+ 163   1        timer->timer_arg = timer_arg;
+ 164   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    750    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     29      17
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

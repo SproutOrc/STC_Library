@@ -1,0 +1,11 @@
+".\boot.obj",
+".\C51_ADC.obj",
+".\C51_GPIO.obj",
+".\C51_Timer.obj",
+".\C51_EEPROM.obj",
+".\C51_Uart.obj",
+".\C51_Hardware_Init.obj",
+".\user_main.obj" 
+TO "projectLib" 
+RAMSIZE(256) 
+DISABLEWARNING (16) 
